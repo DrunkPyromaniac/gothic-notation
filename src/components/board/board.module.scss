@@ -1,0 +1,29 @@
+
+$squareSize: 100px;
+
+.row {
+	display: flex;
+}
+
+.square {
+	width: $squareSize;
+	height: $squareSize;
+	&.dark {
+		background: green;
+	}
+	&.light {
+		background: floralwhite;
+	}
+}
+
+.piece {
+	font-size: 25px;
+	font-weight: bold;
+	cursor: move;
+	&.black {
+		color: black;
+	}
+	&.white {
+		color: blue;
+	}
+}
