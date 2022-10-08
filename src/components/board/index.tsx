@@ -1,5 +1,5 @@
 import React from "react";
-import {DndProvider, useDrag} from "react-dnd";
+import {DndProvider, useDrag, useDrop} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
 import classnames from "classnames/bind";
 
@@ -13,15 +13,15 @@ interface RowProps {
 	rank: number;
 }
 
-export enum Pieces {
-	N = "Knight",
-	A = "Archbishop",
-	K = "King",
-	C = "Chancellor",
-	R = "Rook",
-	P = "Pawn",
-	B = "Bishop",
-	Q = "Queen",
+const Pieces = {
+	A: "Archbishop",
+	B: "Bishop",
+	C: "Chancellor",
+	K: "King",
+	N: "Knight",
+	P: "Pawn",
+	Q: "Queen",
+	R: "Rook",
 };
 
 const Row = ({start, pieces, rank}: RowProps) => {
@@ -29,7 +29,8 @@ const Row = ({start, pieces, rank}: RowProps) => {
 	for (let i = 0; i < pieces.length; i++) {
 		ret.push(
 			<Square
-				name={`${rank}${String.fromCharCode(97 + i)}`}
+				rank={rank}
+				file={i}
 				color={start}
 				piece={pieces[i]}
 			/>
@@ -54,46 +55,49 @@ export const Board = () => {
 	let start: SquareColor = "dark";
 	const ret: React.ReactNode[] = [];
 	for (let i = 0; i < board.length; i++) {
-		ret.unshift(<Row start={start} pieces={board[i]} rank={i + 1} />);
+		ret.unshift(<Row start={start} pieces={board[i]} rank={i} />);
 		start = start === "dark" ? "light" : "dark";
 	}
 	return <DndProvider backend={HTML5Backend}>{ret}</DndProvider>;
 };
 
 interface SquareProps {
-	name: string;
+	rank: number;
+	file: number;
 	color: SquareColor;
 	piece?: string;
 }
 
-const Square = ({name, color, piece}: SquareProps) => {
+const Square = ({rank, file, color, piece}: SquareProps) => {
 	let pieceR: React.ReactNode = null;
 	if (piece) {
-		const u = piece.toUpperCase();
+		const u = piece.toUpperCase() as keyof typeof Pieces;
 		const color = piece === u ? "white" : "black";
-		const type =
-			u === "A" ? Pieces.A :
-			u === "B" ? Pieces.B :
-			u === "C" ? Pieces.C :
-			u === "K" ? Pieces.K :
-			u === "N" ? Pieces.N :
-			u === "P" ? Pieces.P :
-			u === "Q" ? Pieces.Q :
-			u === "R" ? Pieces.R :
-			undefined;
-		
-		if (type)
-			pieceR = <Piece color={color} type={type} />;
+
+		if (u)
+			pieceR = <Piece color={color} type={u} />;
 	}
+
+	const [{isOver}, drop] = useDrop(
+		() => ({
+			accept: Object.keys(Pieces),
+			drop: () => console.log(rank, file),
+			collect: (monitor) => ({
+				isOver: !!monitor.isOver(),
+			}),
+		}),
+		[rank, file],
+	);
+
 	return (
-		<div className={bStyles("square", color)}>
-			{pieceR}			
+		<div ref={drop} className={bStyles("square", color, {isOver})}>
+			{pieceR}
 		</div>
 	);
 };
 
 interface PieceProps {
-	type: Pieces;
+	type: keyof typeof Pieces;
 	color: "white" | "black";
 };
 
@@ -107,14 +111,14 @@ const Piece = ({type, color}: PieceProps) => {
 	}));
 
 	return (
-    <div
-      ref={drag}
+		<div
+			ref={drag}
 			className={bStyles("piece", color)}
-      style={{opacity: isDragging ? 0.5 : 1}}
-    >
-      {type}
-    </div>
-  );
+			style={{opacity: isDragging ? 0.5 : 1}}
+		>
+			{type}
+		</div>
+	);
 };
 
 export default Board;

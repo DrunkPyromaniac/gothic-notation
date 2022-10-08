@@ -5,14 +5,26 @@ $squareSize: 100px;
 	display: flex;
 }
 
+.dropTarget {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
 .square {
 	width: $squareSize;
 	height: $squareSize;
 	&.dark {
 		background: green;
+		&.isOver {
+			background: yellow;
+		}
 	}
 	&.light {
 		background: floralwhite;
+		&.isOver {
+			background: yellow;
+		}
 	}
 }
 
