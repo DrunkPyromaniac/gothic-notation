@@ -1,10 +1,15 @@
-import React from "react";
+import React, {useContext} from "react";
 import {DndProvider, useDrag, useDrop} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
 import classnames from "classnames/bind";
 
 import styles from "./board.module.scss";
 const bStyles = classnames.bind(styles);
+
+const BoardContext = React.createContext({
+	dropPiece: (item: any, rank: number, file: number) => console.log(item, rank, file),
+	canDropPiece: (item: any, rank: number, file: number) => true,
+});
 
 type SquareColor = "light" | "dark";
 interface RowProps {
@@ -69,7 +74,9 @@ interface SquareProps {
 }
 
 const Square = ({rank, file, color, piece}: SquareProps) => {
+	const board = useContext(BoardContext);
 	let pieceR: React.ReactNode = null;
+
 	if (piece) {
 		const u = piece.toUpperCase() as keyof typeof Pieces;
 		const color = piece === u ? "white" : "black";
@@ -78,11 +85,13 @@ const Square = ({rank, file, color, piece}: SquareProps) => {
 			pieceR = <Piece color={color} type={u} />;
 	}
 
-	const [{isOver}, drop] = useDrop(
+	const [{canDrop, isOver}, drop] = useDrop(
 		() => ({
 			accept: Object.keys(Pieces),
-			drop: () => console.log(rank, file),
+			canDrop: item => board.canDropPiece(item, rank, file),
+			drop: item => board.dropPiece(item, rank, file),
 			collect: (monitor) => ({
+				canDrop: !!monitor.canDrop(),
 				isOver: !!monitor.isOver(),
 			}),
 		}),
@@ -90,7 +99,7 @@ const Square = ({rank, file, color, piece}: SquareProps) => {
 	);
 
 	return (
-		<div ref={drop} className={bStyles("square", color, {isOver})}>
+		<div ref={drop} className={bStyles("square", color, {isOver, canDrop})}>
 			{pieceR}
 		</div>
 	);
