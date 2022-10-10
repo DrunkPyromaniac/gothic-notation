@@ -16,15 +16,15 @@ $squareSize: 100px;
 	height: $squareSize;
 	&.dark {
 		background: green;
-		&.isOver {
-			background: yellow;
-		}
 	}
 	&.light {
 		background: floralwhite;
-		&.isOver {
-			background: yellow;
-		}
+	}
+	&:not(.isOver).canDrop {
+		background: lightyellow;
+	}
+	&.isOver.canDrop {
+		background: yellow;
 	}
 }
 
