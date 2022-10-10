@@ -1,4 +1,4 @@
-import React, {useContext} from "react";
+import React, {useContext, useState} from "react";
 import {DndProvider, useDrag, useDrop} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
 import classnames from "classnames/bind";
@@ -6,10 +6,16 @@ import classnames from "classnames/bind";
 import styles from "./board.module.scss";
 const bStyles = classnames.bind(styles);
 
-const BoardContext = React.createContext({
-	dropPiece: (item: any, rank: number, file: number) => console.log(item, rank, file),
-	canDropPiece: (item: any, rank: number, file: number) => true,
-});
+type APiece = any;
+
+interface IBoardContext {
+	dropPiece: (item: APiece, rank: number, file: number) => void;
+	canDropPiece: (item: APiece, rank: number, file: number) => boolean;
+	getPiece: (rank: number, file: number) => APiece | undefined;
+	pieces: APiece[][];
+};
+
+const BoardContext = React.createContext<IBoardContext>({} as IBoardContext);
 
 type SquareColor = "light" | "dark";
 interface RowProps {
@@ -45,25 +51,35 @@ const Row = ({start, pieces, rank}: RowProps) => {
 	return <div className={styles.row}>{ret}</div>;
 };
 
-const board = [
-	['R', 'N', 'B', 'Q', 'C', 'K', 'A', 'B', 'N', 'R'],
-	['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-	['', '', '', '', '', '', '', '', '', ''],
-	['', '', '', '', '', '', '', '', '', ''],
-	['', '', '', '', '', '', '', '', '', ''],
-	['', '', '', '', '', '', '', '', '', ''],
-	['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-	['r', 'n', 'b', 'q', 'c', 'k', 'a', 'b', 'n', 'r'],
-];
-
 export const Board = () => {
 	let start: SquareColor = "dark";
 	const ret: React.ReactNode[] = [];
-	for (let i = 0; i < board.length; i++) {
-		ret.unshift(<Row start={start} pieces={board[i]} rank={i} />);
+	const [pieces, setPieces] = useState([
+		['R', 'N', 'B', 'Q', 'C', 'K', 'A', 'B', 'N', 'R'],
+		['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+		['', '', '', '', '', '', '', '', '', ''],
+		['', '', '', '', '', '', '', '', '', ''],
+		['', '', '', '', '', '', '', '', '', ''],
+		['', '', '', '', '', '', '', '', '', ''],
+		['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+		['r', 'n', 'b', 'q', 'c', 'k', 'a', 'b', 'n', 'r'],
+	]);
+
+	const dropPiece = (item: any, rank: number, file: number) => console.log(item, rank, file);
+	const canDropPiece = (item: any, rank: number, file: number) => true;
+	const getPiece = (rank: number, file: number) => pieces[rank][file];
+
+	for (let i = 0; i < pieces.length; i++) {
+		ret.unshift(<Row start={start} pieces={pieces[i]} rank={i} />);
 		start = start === "dark" ? "light" : "dark";
 	}
-	return <DndProvider backend={HTML5Backend}>{ret}</DndProvider>;
+	return (
+		<BoardContext.Provider value={{dropPiece, canDropPiece, getPiece, pieces}}>
+			<DndProvider backend={HTML5Backend}>
+				{ret}
+			</DndProvider>
+		</BoardContext.Provider>
+	);
 };
 
 interface SquareProps {
@@ -82,7 +98,7 @@ const Square = ({rank, file, color, piece}: SquareProps) => {
 		const color = piece === u ? "white" : "black";
 
 		if (u)
-			pieceR = <Piece color={color} type={u} />;
+			pieceR = <Piece rank={rank} file={file} color={color} type={u} />;
 	}
 
 	const [{canDrop, isOver}, drop] = useDrop(
@@ -108,12 +124,14 @@ const Square = ({rank, file, color, piece}: SquareProps) => {
 interface PieceProps {
 	type: keyof typeof Pieces;
 	color: "white" | "black";
+	rank: number;
+	file: number;
 };
 
-const Piece = ({type, color}: PieceProps) => {
+const Piece = ({type, color, rank, file}: PieceProps) => {
 	const [{isDragging}, drag] = useDrag(() => ({
 		type,
-		item: {piece: type, color},
+		item: {rank, file},
 		collect: monitor => ({
 			isDragging: !!monitor.isDragging(),
 		}),
