@@ -68,6 +68,10 @@ export const Board = () => {
 	const dropPiece = (item: Location, rank: number, file: number) => console.log(item, rank, file);
 	const canDropPiece = (item: Location, rank: number, file: number): boolean => {
 		if (rank === item.rank && file === item.file) return false;
+		const piece = getPiece(item);
+		const destPiece = getPiece({rank, file});
+		if (destPiece?.color === piece?.color)
+			return false;
 		return true;
 	};
 	const getPiece = ({rank, file}: Location): APiece | undefined => {
