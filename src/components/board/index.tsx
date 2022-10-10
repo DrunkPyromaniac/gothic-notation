@@ -65,6 +65,39 @@ export const Board = () => {
 		['r', 'n', 'b', 'q', 'c', 'k', 'a', 'b', 'n', 'r'],
 	]);
 
+	const canMoveHere = (src: Location, dest: Location, piece: APiece): boolean => {
+		const dRank = dest.rank - src.rank;
+		const dFile = dest.file - src.file;
+		const moveBishop = dRank === dFile || dRank === -dFile;
+		const moveRook = dRank === 0 || dFile === 0;
+		const moveKnight = (Math.abs(dRank) === 2 && Math.abs(dFile) === 1) || (Math.abs(dRank) === 1 && Math.abs(dFile) === 2);
+		const moveKing = Math.abs(dRank) <= 1 && Math.abs(dFile) <= 1;
+		if (piece.type === "B")
+			return moveBishop;
+		if (piece.type === "R")
+			return moveRook;
+		if (piece.type === "N")
+			return moveKnight;
+		if (piece.type === "K")
+			return moveKing;
+		if (piece.type === "Q")
+			return moveRook || moveBishop;
+		if (piece.type === "A")
+			return moveBishop || moveKnight;
+		if (piece.type === "C")
+			return moveRook || moveKnight;
+		if (piece.type === "P") {
+			if (piece.color === "black") {
+				if (src.rank === 6) return dFile === 0 && (dest.rank === 5 || dest.rank === 4);
+				return dFile === 0 && dRank === -1;
+			} else {
+				if (src.rank === 1) return dFile === 0 && (dest.rank === 2 || dest.rank === 3);
+				return dFile === 0 && dRank === 1;
+			}
+		}
+		return false;
+	};
+
 	const dropPiece = (item: Location, rank: number, file: number) => setPieces(curr => {
 		const ret = [...curr];
 		const piece = getPiece(item);
@@ -73,16 +106,17 @@ export const Board = () => {
 
 		ret[item.rank][item.file] = '';
 		ret[rank][file] = piece.color === "white" ? piece.type :piece.type.toLowerCase();
-		console.log(item, rank, file);
 		return ret;
 	});
 	const canDropPiece = (item: Location, rank: number, file: number): boolean => {
 		if (rank === item.rank && file === item.file) return false;
 		const piece = getPiece(item);
 		const destPiece = getPiece({rank, file});
-		if (destPiece?.color === piece?.color)
+		if (!piece)
 			return false;
-		return true;
+		if (destPiece?.color === piece.color)
+			return false;
+		return canMoveHere(item, {rank, file}, piece);
 	};
 	const getPiece = ({rank, file}: Location): APiece | undefined => {
 		const piece = pieces[rank][file];
