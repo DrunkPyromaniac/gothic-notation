@@ -65,7 +65,17 @@ export const Board = () => {
 		['r', 'n', 'b', 'q', 'c', 'k', 'a', 'b', 'n', 'r'],
 	]);
 
-	const dropPiece = (item: Location, rank: number, file: number) => console.log(item, rank, file);
+	const dropPiece = (item: Location, rank: number, file: number) => setPieces(curr => {
+		const ret = [...curr];
+		const piece = getPiece(item);
+		if (!piece)
+			return curr;
+
+		ret[item.rank][item.file] = '';
+		ret[rank][file] = piece.color === "white" ? piece.type :piece.type.toLowerCase();
+		console.log(item, rank, file);
+		return ret;
+	});
 	const canDropPiece = (item: Location, rank: number, file: number): boolean => {
 		if (rank === item.rank && file === item.file) return false;
 		const piece = getPiece(item);
