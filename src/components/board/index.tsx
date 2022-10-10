@@ -6,13 +6,14 @@ import classnames from "classnames/bind";
 import styles from "./board.module.scss";
 const bStyles = classnames.bind(styles);
 
-type APiece = any;
+type APiece = {color: "white" | "black", type: keyof typeof Pieces};
+type Location = {rank: number, file: number};
 
 interface IBoardContext {
-	dropPiece: (item: APiece, rank: number, file: number) => void;
-	canDropPiece: (item: APiece, rank: number, file: number) => boolean;
-	getPiece: (rank: number, file: number) => APiece | undefined;
-	pieces: APiece[][];
+	dropPiece: (item: Location, rank: number, file: number) => void;
+	canDropPiece: (item: Location, rank: number, file: number) => boolean;
+	getPiece: (item: Location) => APiece | undefined;
+	pieces: string[][];
 };
 
 const BoardContext = React.createContext<IBoardContext>({} as IBoardContext);
@@ -43,7 +44,6 @@ const Row = ({start, pieces, rank}: RowProps) => {
 				rank={rank}
 				file={i}
 				color={start}
-				piece={pieces[i]}
 			/>
 		);
 		start = start === "light" ? "dark" : "light";
@@ -65,9 +65,19 @@ export const Board = () => {
 		['r', 'n', 'b', 'q', 'c', 'k', 'a', 'b', 'n', 'r'],
 	]);
 
-	const dropPiece = (item: any, rank: number, file: number) => console.log(item, rank, file);
-	const canDropPiece = (item: any, rank: number, file: number) => true;
-	const getPiece = (rank: number, file: number) => pieces[rank][file];
+	const dropPiece = (item: Location, rank: number, file: number) => console.log(item, rank, file);
+	const canDropPiece = (item: Location, rank: number, file: number): boolean => {
+		if (rank === item.rank && file === item.file) return false;
+		return true;
+	};
+	const getPiece = ({rank, file}: Location): APiece | undefined => {
+		const piece = pieces[rank][file];
+		if (!piece)
+			return undefined;
+		const u = piece.toUpperCase() as keyof typeof Pieces;
+		const color = piece === u ? "white" : "black";
+		return {type: u, color};
+	};
 
 	for (let i = 0; i < pieces.length; i++) {
 		ret.unshift(<Row start={start} pieces={pieces[i]} rank={i} />);
@@ -86,22 +96,13 @@ interface SquareProps {
 	rank: number;
 	file: number;
 	color: SquareColor;
-	piece?: string;
 }
 
-const Square = ({rank, file, color, piece}: SquareProps) => {
+const Square = ({rank, file, color}: SquareProps) => {
 	const board = useContext(BoardContext);
-	let pieceR: React.ReactNode = null;
+	const piece = board.getPiece({rank, file});
 
-	if (piece) {
-		const u = piece.toUpperCase() as keyof typeof Pieces;
-		const color = piece === u ? "white" : "black";
-
-		if (u)
-			pieceR = <Piece rank={rank} file={file} color={color} type={u} />;
-	}
-
-	const [{canDrop, isOver}, drop] = useDrop(
+	const [{canDrop, isOver}, drop] = useDrop<Location, any, any>(
 		() => ({
 			accept: Object.keys(Pieces),
 			canDrop: item => board.canDropPiece(item, rank, file),
@@ -116,21 +117,20 @@ const Square = ({rank, file, color, piece}: SquareProps) => {
 
 	return (
 		<div ref={drop} className={bStyles("square", color, {isOver, canDrop})}>
-			{pieceR}
+			{piece && <Piece rank={rank} file={file} piece={piece} />}
 		</div>
 	);
 };
 
 interface PieceProps {
-	type: keyof typeof Pieces;
-	color: "white" | "black";
+	piece: APiece;
 	rank: number;
 	file: number;
 };
 
-const Piece = ({type, color, rank, file}: PieceProps) => {
+const Piece = ({piece, rank, file}: PieceProps) => {
 	const [{isDragging}, drag] = useDrag(() => ({
-		type,
+		type: piece.type,
 		item: {rank, file},
 		collect: monitor => ({
 			isDragging: !!monitor.isDragging(),
@@ -140,10 +140,10 @@ const Piece = ({type, color, rank, file}: PieceProps) => {
 	return (
 		<div
 			ref={drag}
-			className={bStyles("piece", color)}
+			className={bStyles("piece", piece.color)}
 			style={{opacity: isDragging ? 0.5 : 1}}
 		>
-			{type}
+			{piece.type}
 		</div>
 	);
 };
